@@ -1,6 +1,7 @@
 "use client";
 
 import { useDispatchStore } from "@/lib/store";
+import { cn } from "@/lib/cn";
 import type { ProposedChange } from "@/lib/types";
 import { Avatar } from "../ui/Avatar";
 import { Badge } from "../ui/Badge";
@@ -25,6 +26,8 @@ export function RecommendationCard({ change }: { change: ProposedChange }) {
   const proposalStatus = useDispatchStore((s) => s.proposal?.status);
   const acceptChange = useDispatchStore((s) => s.acceptChange);
   const rejectChange = useDispatchStore((s) => s.rejectChange);
+  const highlightedChangeId = useDispatchStore((s) => s.highlightedChangeId);
+  const setHighlightedChangeId = useDispatchStore((s) => s.setHighlightedChangeId);
 
   if (!project) return null;
 
@@ -33,9 +36,32 @@ export function RecommendationCard({ change }: { change: ProposedChange }) {
     .filter((e): e is NonNullable<typeof e> => Boolean(e));
   const statusStyle = STATUS_STYLES[change.status];
   const canDecide = change.type !== "unassigned" && proposalStatus === "draft";
+  const linkedOnCalendar = change.proposedDay != null;
+  const isHighlighted = highlightedChangeId === change.id;
+
+  function handleClick() {
+    if (!linkedOnCalendar) return;
+    const next = isHighlighted ? null : change.id;
+    setHighlightedChangeId(next);
+    if (next) {
+      document
+        .getElementById(`proposed-card-${change.id}`)
+        ?.scrollIntoView({ behavior: "smooth", block: "center", inline: "center" });
+    }
+  }
 
   return (
-    <div className="flex flex-col gap-2 rounded-md border border-[var(--border-subtle)] p-3">
+    <div
+      id={`recommendation-${change.id}`}
+      onClick={handleClick}
+      className={cn(
+        "flex flex-col gap-2 rounded-md border p-3 transition-colors",
+        linkedOnCalendar && "cursor-pointer",
+        isHighlighted
+          ? "border-violet-400 bg-violet-50 ring-2 ring-violet-400 dark:border-violet-600 dark:bg-violet-950/30 dark:ring-violet-600"
+          : "border-[var(--border-subtle)]"
+      )}
+    >
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
           <div className="truncate text-xs font-semibold text-[var(--foreground)]">{project.name}</div>
@@ -77,14 +103,20 @@ export function RecommendationCard({ change }: { change: ProposedChange }) {
           <Button
             variant={change.status === "accepted" ? "primary" : "secondary"}
             className="flex-1 py-1 text-[11px]"
-            onClick={() => acceptChange(change.id)}
+            onClick={(e) => {
+              e.stopPropagation();
+              acceptChange(change.id);
+            }}
           >
             Accept
           </Button>
           <Button
             variant={change.status === "rejected" ? "danger" : "secondary"}
             className="flex-1 py-1 text-[11px]"
-            onClick={() => rejectChange(change.id)}
+            onClick={(e) => {
+              e.stopPropagation();
+              rejectChange(change.id);
+            }}
           >
             Reject
           </Button>

@@ -5,6 +5,7 @@ import { isEmployeeOffOn } from "@/lib/availability";
 import { isProjectLocked } from "@/lib/queue";
 import { crewForCell, equipmentForCell } from "@/lib/scheduleHelpers";
 import { useDispatchStore } from "@/lib/store";
+import { cn } from "@/lib/cn";
 import type { ISODate, Project, ProposedChange } from "@/lib/types";
 import { Droppable } from "../dnd/Droppable";
 import { Avatar } from "../ui/Avatar";
@@ -33,6 +34,8 @@ export function ProjectCard({
   const removeEquipmentAssignment = useDispatchStore((s) => s.removeEquipmentAssignment);
   const removeWorkDay = useDispatchStore((s) => s.removeWorkDay);
   const extendDay = useDispatchStore((s) => s.extendDay);
+  const highlightedChangeId = useDispatchStore((s) => s.highlightedChangeId);
+  const setHighlightedChangeId = useDispatchStore((s) => s.setHighlightedChangeId);
 
   const projectsById = new Map(projects.map((p) => [p.id, p]));
   const locked = isProjectLocked(project, projectsById);
@@ -46,6 +49,7 @@ export function ProjectCard({
         .filter((c) => employees.some((e) => e.id === c.employeeId))
     : realCrew;
   const equip = isProposed ? [] : equipmentForCell(equipmentAssignments, project.id, day);
+  const isHighlighted = isProposed && highlightedChangeId === change!.id;
 
   function guardOrRun(fn: () => void) {
     if (locked) {
@@ -53,6 +57,20 @@ export function ProjectCard({
       return;
     }
     fn();
+  }
+
+  function handleCardClick() {
+    if (!isProposed) {
+      openModal({ type: "project-detail", projectId: project.id });
+      return;
+    }
+    const next = isHighlighted ? null : change!.id;
+    setHighlightedChangeId(next);
+    if (next) {
+      document
+        .getElementById(`recommendation-${change!.id}`)
+        ?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }
   }
 
   const cardBlocked =
@@ -71,12 +89,17 @@ export function ProjectCard({
       className="w-full min-w-0 rounded-md"
     >
       <div
-        onClick={() => openModal({ type: "project-detail", projectId: project.id })}
-        className={`flex w-full min-w-0 cursor-pointer flex-col gap-1.5 rounded-md border p-2 shadow-sm ${
+        id={isProposed ? `proposed-card-${change!.id}` : undefined}
+        onClick={handleCardClick}
+        className={cn(
+          "flex w-full min-w-0 cursor-pointer flex-col gap-1.5 rounded-md border p-2 shadow-sm transition-colors",
           isProposed
-            ? "border-violet-300 bg-violet-50 ring-1 ring-violet-300 dark:border-violet-800 dark:bg-violet-950/20 dark:ring-violet-800"
-            : "border-[var(--border-subtle)] bg-[var(--surface)] hover:border-[var(--border)]"
-        } ${locked ? "opacity-60 grayscale-[0.4]" : ""}`}
+            ? isHighlighted
+              ? "border-violet-500 bg-violet-100 ring-2 ring-violet-500 dark:border-violet-400 dark:bg-violet-900/40 dark:ring-violet-400"
+              : "border-violet-300 bg-violet-50 ring-1 ring-violet-300 dark:border-violet-800 dark:bg-violet-950/20 dark:ring-violet-800"
+            : "border-[var(--border-subtle)] bg-[var(--surface)] hover:border-[var(--border)]",
+          locked && "opacity-60 grayscale-[0.4]"
+        )}
         style={{ borderLeftWidth: 3, borderLeftColor: isProposed ? "#8b5cf6" : project.serviceCategory.color }}
       >
         <div className="flex min-w-0 items-start gap-1">

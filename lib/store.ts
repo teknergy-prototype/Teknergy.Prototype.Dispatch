@@ -107,6 +107,9 @@ interface DispatchStore {
   draggingItem: DragItemData | null;
   setDraggingItem: (d: DragItemData | null) => void;
 
+  highlightedChangeId: string | null;
+  setHighlightedChangeId: (id: string | null) => void;
+
   scheduleProject: (projectId: string, day: ISODate, mode: "add" | "reschedule") => void;
   removeWorkDay: (projectId: string, day: ISODate) => void;
   extendDay: (projectId: string) => void;
@@ -205,6 +208,9 @@ export const useDispatchStore = create<DispatchStore>((set) => ({
 
   draggingItem: null,
   setDraggingItem: (d) => set({ draggingItem: d }),
+
+  highlightedChangeId: null,
+  setHighlightedChangeId: (id) => set({ highlightedChangeId: id }),
 
   scheduleProject: (projectId, day, mode) =>
     set((s) => ({
@@ -401,7 +407,7 @@ export const useDispatchStore = create<DispatchStore>((set) => ({
         status: "draft",
         iteration: 1,
       };
-      return { proposal, aiPanelOpen: true };
+      return { proposal, aiPanelOpen: true, highlightedChangeId: null };
     }),
 
   sendChatMessage: (text) =>
@@ -451,6 +457,7 @@ export const useDispatchStore = create<DispatchStore>((set) => ({
           iteration: s.proposal.iteration + 1,
           chat: [...s.proposal.chat, userMsg, aiMsg],
         },
+        highlightedChangeId: null,
       };
     }),
 
@@ -476,7 +483,7 @@ export const useDispatchStore = create<DispatchStore>((set) => ({
       };
     }),
 
-  discardProposal: () => set({ proposal: null, aiPanelOpen: false }),
+  discardProposal: () => set({ proposal: null, aiPanelOpen: false, highlightedChangeId: null }),
 
   applyRecommendation: () =>
     set((s) => {
@@ -510,6 +517,7 @@ export const useDispatchStore = create<DispatchStore>((set) => ({
         projects,
         crewAssignments,
         proposal: { ...s.proposal, status: "applied" },
+        highlightedChangeId: null,
       };
     }),
 
