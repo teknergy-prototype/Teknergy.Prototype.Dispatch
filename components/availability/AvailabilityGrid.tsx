@@ -38,7 +38,7 @@ export function AvailabilityGrid() {
           return (
             <div
               key={day}
-              className="sticky top-0 z-10 flex flex-col items-center justify-center gap-0.5 border-b border-l border-[var(--border-subtle)] py-2.5"
+              className="sticky top-0 z-10 flex flex-col items-center justify-center gap-0.5 border-b border-l border-[var(--border-subtle)] bg-[var(--surface)] py-2.5"
               style={{ backgroundColor: isToday ? "var(--today-bg)" : undefined }}
             >
               <span className="text-[10px] font-medium uppercase tracking-wide text-[var(--muted)]">

@@ -107,7 +107,7 @@ export interface AvailabilityEntry {
   isPTO: boolean;
 }
 
-export type ViewKey = "schedule" | "routes" | "availability";
+export type ViewKey = "schedule" | "routes" | "availability" | "workload";
 
 export type RangeMode = "1day" | "3day" | "7day" | "custom";
 

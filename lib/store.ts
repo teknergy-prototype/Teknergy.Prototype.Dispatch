@@ -189,7 +189,7 @@ export const useDispatchStore = create<DispatchStore>((set) => ({
   routesFiltersOpen: false,
   setRoutesFiltersOpen: (b) => set({ routesFiltersOpen: b }),
 
-  sidebarTab: { schedule: "projects", routes: "projects", availability: "crew" },
+  sidebarTab: { schedule: "projects", routes: "projects", availability: "crew", workload: "projects" },
   setSidebarTab: (view, tab) => set((s) => ({ sidebarTab: { ...s.sidebarTab, [view]: tab } })),
   sidebarSearch: "",
   setSidebarSearch: (s) => set({ sidebarSearch: s }),

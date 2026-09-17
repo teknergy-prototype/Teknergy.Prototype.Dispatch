@@ -19,6 +19,7 @@ import { DragPreview } from "../dnd/DragPreview";
 import { ModalsRoot } from "../modals/ModalsRoot";
 import { RoutesGrid } from "../routes/RoutesGrid";
 import { ScheduleGrid } from "../schedule/ScheduleGrid";
+import { WorkloadGrid } from "../workload/WorkloadGrid";
 import { Sidebar } from "../sidebar/Sidebar";
 import { DateRangeBar } from "./DateRangeBar";
 import { FilterBar } from "./FilterBar";
@@ -165,9 +166,10 @@ export function DispatchShell() {
         <FilterBar />
 
         <div className="flex min-h-0 flex-1">
-          <Sidebar />
+          {activeView !== "workload" && <Sidebar />}
           {activeView === "schedule" && <ScheduleGrid />}
           {activeView === "routes" && <RoutesGrid />}
+          {activeView === "workload" && <WorkloadGrid />}
           {activeView === "availability" && <AvailabilityGrid />}
           {activeView === "schedule" && aiPanelOpen && <AiRecommendationPanel />}
         </div>

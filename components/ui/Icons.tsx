@@ -240,3 +240,14 @@ export function ArrowDownIcon(props: IconProps) {
     </svg>
   );
 }
+
+export function UsersLoadIcon(props: IconProps) {
+  return (
+    <svg {...base(props)}>
+      <circle cx="9" cy="8" r="3" stroke="currentColor" strokeWidth="1.6" />
+      <path d="M3.5 19c0-3 2.5-5 5.5-5s5.5 2 5.5 5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+      <path d="M15.5 5.5A3 3 0 0 1 16 11.4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+      <path d="M17 14.2c2 .5 3.5 2.2 3.5 4.8" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+    </svg>
+  );
+}

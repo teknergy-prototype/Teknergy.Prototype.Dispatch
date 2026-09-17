@@ -32,7 +32,7 @@ export function FilterBar() {
 
   if (activeView === "availability") return null;
 
-  const isSchedule = activeView === "schedule";
+  const isSchedule = activeView === "schedule" || activeView === "workload";
   const activeCount = isSchedule
     ? filters.statuses.length + filters.categories.length + (filters.search ? 1 : 0)
     : routesFilters.statuses.length + (routesFilters.search ? 1 : 0);

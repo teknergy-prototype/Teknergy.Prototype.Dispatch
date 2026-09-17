@@ -3,11 +3,12 @@
 import { useDispatchStore } from "@/lib/store";
 import type { ViewKey } from "@/lib/types";
 import { cn } from "@/lib/cn";
-import { CalendarDashIcon, CalendarIcon, RouteIcon } from "../ui/Icons";
+import { CalendarDashIcon, CalendarIcon, RouteIcon, UsersLoadIcon } from "../ui/Icons";
 
 const TABS: { key: ViewKey; label: string; Icon: typeof CalendarIcon }[] = [
   { key: "schedule", label: "Schedule", Icon: CalendarIcon },
   { key: "routes", label: "Routes", Icon: RouteIcon },
+  { key: "workload", label: "Workload", Icon: UsersLoadIcon },
   { key: "availability", label: "Availability", Icon: CalendarDashIcon },
 ];
 
