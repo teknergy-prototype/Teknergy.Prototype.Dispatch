@@ -22,6 +22,7 @@ import { ScheduleGrid } from "../schedule/ScheduleGrid";
 import { Sidebar } from "../sidebar/Sidebar";
 import { DateRangeBar } from "./DateRangeBar";
 import { FilterBar } from "./FilterBar";
+import { PrototypeBanner } from "./PrototypeBanner";
 import { ThemeToggle } from "./ThemeToggle";
 import { ViewTabs } from "./ViewTabs";
 
@@ -151,6 +152,7 @@ export function DispatchShell() {
       onDragCancel={() => setDraggingItem(null)}
     >
       <div className="flex h-screen flex-col bg-[var(--background)] text-[var(--foreground)]">
+        <PrototypeBanner />
         <header className="flex items-center justify-between border-b border-[var(--border-subtle)] px-4 py-3">
           <div className="flex items-center gap-1.5 text-sm">
             <span className="font-semibold">Dispatch</span>
