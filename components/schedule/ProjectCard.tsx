@@ -142,8 +142,14 @@ export function ProjectCard({
             {project.status}
           </Badge>
           {isProposed && (
-            <Badge className="bg-violet-100 text-violet-700 dark:bg-violet-900/50 dark:text-violet-300">
-              Proposed
+            <Badge
+              className={
+                change!.status === "accepted"
+                  ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300"
+                  : "bg-violet-100 text-violet-700 dark:bg-violet-900/50 dark:text-violet-300"
+              }
+            >
+              {change!.status === "accepted" ? "Accepted" : "Proposed"}
             </Badge>
           )}
         </div>
