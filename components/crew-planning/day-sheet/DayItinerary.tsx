@@ -1,11 +1,12 @@
 "use client";
 
+import { BREAK_POLICY_LABEL } from "@/lib/crew-planning/breakPolicy";
 import { JOB_STATUS_STYLES } from "@/lib/crew-planning/colors";
 import { formatDuration, formatMinutes } from "@/lib/crew-planning/time";
 import type { ItineraryItem, Job } from "@/lib/crew-planning/types";
 import { cn } from "@/lib/cn";
 import { Badge } from "../../ui/Badge";
-import { BoxIcon, ClipboardIcon, CoffeeIcon, HomeIcon, TruckIcon, WarningIcon } from "../../ui/Icons";
+import { BoxIcon, ClipboardIcon, CoffeeIcon, HomeIcon, InfoIcon, TruckIcon, WarningIcon } from "../../ui/Icons";
 
 const ICONS: Record<ItineraryItem["type"], typeof ClipboardIcon> = {
   checkin: ClipboardIcon,
@@ -34,7 +35,12 @@ export function DayItinerary({
   return (
     <div>
       <div className="mb-2 flex items-center justify-between">
-        <h2 className="text-xs font-semibold text-[var(--foreground)]">Day itinerary</h2>
+        <h2 className="flex items-center gap-1 text-xs font-semibold text-[var(--foreground)]">
+          Day itinerary
+          <span title={BREAK_POLICY_LABEL} className="cursor-help font-normal text-[var(--muted-2)]">
+            <InfoIcon size={11} />
+          </span>
+        </h2>
         <span className="text-[10px] text-[var(--muted-2)]">Select a job to see access details →</span>
       </div>
 

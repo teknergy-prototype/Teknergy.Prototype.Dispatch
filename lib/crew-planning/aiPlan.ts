@@ -109,27 +109,28 @@ export function generateAiPlan(jobs: Job[], crews: CrewTeam[], constraints: Plan
     }
   }
 
-  // Compliance: flag any crew whose confirmed run exceeds ~5 continuous hours of service.
+  // Compliance: rest/meal breaks are inserted automatically by buildDayItinerary
+  // per the break policy. Here we just check whether that auto-insertion pushed
+  // any stop past the client's booked window — that's the one case a dispatcher
+  // actually needs to decide something about.
   for (const crew of crews) {
-    const busy = crewBusyIntervals(crew, jobs);
-    if (busy.length < 2) continue;
-    const totalService = busy.reduce((sum, iv) => sum + (iv.end - iv.start), 0);
-    if (totalService > 300) {
-      const midJob = busy[Math.floor(busy.length / 2) - 1] ?? busy[0];
-      const nextJob = busy[busy.indexOf(midJob) + 1];
-      const timeLabel = formatMinutes(midJob.end);
+    const itinerary = buildDayItinerary(crew, jobs);
+    const hadBreak = itinerary.some((i) => i.type === "break" || i.type === "lunch");
+    if (hadBreak) resolvedCount += 1;
+
+    const missed = itinerary.find((i) => i.type === "job" && i.warning?.startsWith("Required break"));
+    if (missed?.jobId) {
+      const job = jobs.find((j) => j.id === missed.jobId);
       recommendations.push({
         id: nextId("rec"),
         type: "compliance",
-        title: `Schedule lunch for ${crew.name} at ${timeLabel}`,
-        detail: `Workday exceeds 5 hours of continuous service time; a break fits between ${midJob.label} and ${nextJob?.label ?? "the next stop"}.`,
+        title: `${job?.customerName ?? "A stop"} may miss its client window`,
+        detail: `${missed.warning} Consider moving it to a crew with more room, or confirming the later arrival with the client.`,
         crewTeamId: crew.id,
-        timeLabel,
+        jobId: missed.jobId,
         status: "pending",
-        canDecide: true,
+        canDecide: false,
       });
-      resolvedCount += 1;
-      break; // one compliance flag is enough for the demo
     }
   }
 

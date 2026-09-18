@@ -1,3 +1,4 @@
+import { DEFAULT_BREAK_POLICY, type BreakPolicy } from "./breakPolicy";
 import { toMinutes } from "./time";
 import type { CrewTeam, ItineraryItem, Job } from "./types";
 
@@ -6,8 +7,6 @@ import type { CrewTeam, ItineraryItem, Job } from "./types";
 const CREW_DAY_START = toMinutes(7, 45);
 const CHECKIN_MIN = 5;
 const LOAD_MIN = 5;
-const BREAK_MIN = 10;
-const LUNCH_MIN = 30;
 const WRAP_UP_MIN = 17;
 const OFFICE_LABEL = "Office";
 
@@ -46,13 +45,18 @@ function nextId(prefix: string): string {
 }
 
 /**
- * Builds a crew's chronological day itinerary from their confirmed jobs —
- * office check-in/load-out, travel between stops, and a break/lunch inserted
- * the same way the source Day Sheet mockup does (break after stop 1, lunch
- * after stop 2). Re-deriving this from live job data means an accepted AI
- * reassignment shows up on the crew's day sheet automatically.
+ * Builds a crew's chronological day itinerary from their confirmed jobs:
+ * office check-in/load-out, travel between stops, and paid rest breaks /
+ * unpaid meal periods inserted whenever accumulated on-duty time crosses the
+ * break policy's thresholds (not a fixed "after job 1" guess). Re-deriving
+ * this from live job data means an accepted AI reassignment — or a break the
+ * policy requires — shows up on the crew's day sheet automatically.
  */
-export function buildDayItinerary(crew: CrewTeam, allJobs: Job[]): ItineraryItem[] {
+export function buildDayItinerary(
+  crew: CrewTeam,
+  allJobs: Job[],
+  policy: BreakPolicy = DEFAULT_BREAK_POLICY
+): ItineraryItem[] {
   const jobs = allJobs
     .filter((j) => j.crewTeamId === crew.id && (j.status === "confirmed" || j.status === "conflict"))
     .filter((j) => j.scheduledStartMinutes != null)
@@ -62,24 +66,23 @@ export function buildDayItinerary(crew: CrewTeam, allJobs: Job[]): ItineraryItem
   if (jobs.length === 0) return items;
 
   let cursor = CREW_DAY_START;
-  items.push({
-    id: nextId("it"),
+  let sinceRest = 0;
+  let sinceMeal = 0;
+  let mealsTaken = 0;
+
+  function pushOp(duration: number, fields: Omit<ItineraryItem, "id" | "startMinutes" | "endMinutes">) {
+    items.push({ id: nextId("it"), startMinutes: cursor, endMinutes: cursor + duration, ...fields });
+    cursor += duration;
+    sinceRest += duration;
+    sinceMeal += duration;
+  }
+
+  pushOp(CHECKIN_MIN, {
     type: "checkin",
-    startMinutes: cursor,
-    endMinutes: cursor + CHECKIN_MIN,
     label: "Office check-in",
     detail: "Review day instructions and collect supplies",
   });
-  cursor += CHECKIN_MIN;
-  items.push({
-    id: nextId("it"),
-    type: "load-equipment",
-    startMinutes: cursor,
-    endMinutes: cursor + LOAD_MIN,
-    label: "Load equipment",
-    detail: "Vacuum, mop kit, cleaning supplies",
-  });
-  cursor += LOAD_MIN;
+  pushOp(LOAD_MIN, { type: "load-equipment", label: "Load equipment", detail: "Vacuum, mop kit, cleaning supplies" });
 
   let previousLabel = OFFICE_LABEL;
 
@@ -87,6 +90,7 @@ export function buildDayItinerary(crew: CrewTeam, allJobs: Job[]): ItineraryItem
     const leg = travelLeg(previousLabel, job.customerName);
     const travelStart = cursor;
     const travelEnd = job.scheduledStartMinutes! > cursor + leg.minutes ? job.scheduledStartMinutes! : cursor + leg.minutes;
+    const travelDuration = travelEnd - travelStart;
     const isLateArrival = job.status === "conflict";
     items.push({
       id: nextId("it"),
@@ -104,9 +108,13 @@ export function buildDayItinerary(crew: CrewTeam, allJobs: Job[]): ItineraryItem
             : undefined,
     });
     cursor = travelEnd;
+    sinceRest += travelDuration;
+    sinceMeal += travelDuration;
 
     const jobStart = Math.max(cursor, job.scheduledStartMinutes!);
-    const jobEnd = jobStart + job.durationMinutes;
+    const jobDuration = job.durationMinutes;
+    const jobEnd = jobStart + jobDuration;
+    const missedWindow = job.scheduledEndMinutes != null && jobStart > job.scheduledEndMinutes;
     items.push({
       id: nextId("it"),
       type: "job",
@@ -115,52 +123,39 @@ export function buildDayItinerary(crew: CrewTeam, allJobs: Job[]): ItineraryItem
       label: `Job #${job.id}`,
       detail: job.serviceType,
       jobId: job.id,
+      warning: missedWindow
+        ? `Required break pushed this stop past its ${job.jobberAppointmentId ? "Jobber " : ""}client window`
+        : undefined,
     });
     cursor = jobEnd;
+    sinceRest += jobDuration;
+    sinceMeal += jobDuration;
     previousLabel = job.customerName;
 
-    if (index === 0 && jobs.length >= 2) {
-      items.push({
-        id: nextId("it"),
-        type: "break",
-        startMinutes: cursor,
-        endMinutes: cursor + BREAK_MIN,
-        label: "Break",
-        detail: "Paid rest break",
-      });
-      cursor += BREAK_MIN;
-    } else if (index === 1 && jobs.length >= 3) {
-      items.push({
-        id: nextId("it"),
-        type: "lunch",
-        startMinutes: cursor,
-        endMinutes: cursor + LUNCH_MIN,
-        label: "Lunch",
-        detail: "Unpaid · 30 min",
-      });
-      cursor += LUNCH_MIN;
+    const isLastJob = index === jobs.length - 1;
+    if (!isLastJob) {
+      const elapsedSinceStart = cursor - CREW_DAY_START;
+      const dueSecondMeal = mealsTaken === 1 && elapsedSinceStart >= policy.secondMealAfterMinutes;
+      const dueFirstMeal = mealsTaken === 0 && sinceMeal >= policy.mealBreakAfterMinutes;
+      if (mealsTaken < 2 && (dueFirstMeal || dueSecondMeal)) {
+        pushOp(policy.mealBreakDurationMinutes, {
+          type: "lunch",
+          label: "Lunch",
+          detail: `Unpaid · ${policy.mealBreakDurationMinutes} min`,
+        });
+        sinceMeal = 0;
+        sinceRest = 0;
+        mealsTaken += 1;
+      } else if (sinceRest >= policy.restBreakEveryMinutes) {
+        pushOp(policy.restBreakDurationMinutes, { type: "break", label: "Break", detail: "Paid rest break" });
+        sinceRest = 0;
+      }
     }
   });
 
   const legBack = travelLeg(previousLabel, OFFICE_LABEL);
-  items.push({
-    id: nextId("it"),
-    type: "travel",
-    startMinutes: cursor,
-    endMinutes: cursor + legBack.minutes,
-    label: "Travel to office",
-    detail: `${previousLabel} → Office`,
-    miles: legBack.miles,
-  });
-  cursor += legBack.minutes;
-
-  items.push({
-    id: nextId("it"),
-    type: "end-day",
-    startMinutes: cursor,
-    endMinutes: cursor + WRAP_UP_MIN,
-    label: "Return supplies and end day",
-  });
+  pushOp(legBack.minutes, { type: "travel", label: "Travel to office", detail: `${previousLabel} → Office`, miles: legBack.miles });
+  pushOp(WRAP_UP_MIN, { type: "end-day", label: "Return supplies and end day" });
 
   return items;
 }
@@ -177,7 +172,15 @@ export interface DaySummary {
 
 export function summarizeItinerary(items: ItineraryItem[]): DaySummary {
   if (items.length === 0) {
-    return { startMinutes: CREW_DAY_START, endMinutes: CREW_DAY_START, jobCount: 0, serviceMinutes: 0, travelMinutes: 0, breakMinutes: 0, miles: 0 };
+    return {
+      startMinutes: CREW_DAY_START,
+      endMinutes: CREW_DAY_START,
+      jobCount: 0,
+      serviceMinutes: 0,
+      travelMinutes: 0,
+      breakMinutes: 0,
+      miles: 0,
+    };
   }
   const jobItems = items.filter((i) => i.type === "job");
   const travelItems = items.filter((i) => i.type === "travel");

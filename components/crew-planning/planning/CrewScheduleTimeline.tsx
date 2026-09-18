@@ -1,11 +1,12 @@
 "use client";
 
 import { buildDayItinerary, summarizeItinerary } from "@/lib/crew-planning/itinerary";
+import { BREAK_POLICY_LABEL } from "@/lib/crew-planning/breakPolicy";
 import { JOB_STATUS_STYLES } from "@/lib/crew-planning/colors";
 import { useCrewPlanningStore } from "@/lib/crew-planning/store";
 import { DAY_END, DAY_START, formatDuration, formatMinutes, pctOfDay } from "@/lib/crew-planning/time";
 import type { CrewTeam, ItineraryItem, Job } from "@/lib/crew-planning/types";
-import { BoxIcon, ClipboardIcon, CoffeeIcon, HomeIcon } from "../../ui/Icons";
+import { BoxIcon, ClipboardIcon, CoffeeIcon, HomeIcon, InfoIcon } from "../../ui/Icons";
 
 const OP_ICONS: Partial<Record<ItineraryItem["type"], typeof HomeIcon>> = {
   checkin: ClipboardIcon,
@@ -43,7 +44,12 @@ export function CrewScheduleTimeline() {
       <div className="flex items-center justify-between border-b border-[var(--border-subtle)] px-4 py-2.5">
         <div>
           <h2 className="text-xs font-semibold text-[var(--foreground)]">Crew Schedule</h2>
-          <p className="text-[10px] text-[var(--muted)]">Operational day · travel, load-out and breaks included</p>
+          <p className="flex items-center gap-1 text-[10px] text-[var(--muted)]">
+            Operational day · travel, load-out and breaks included
+            <span title={BREAK_POLICY_LABEL} className="cursor-help text-[var(--muted-2)]">
+              <InfoIcon size={11} />
+            </span>
+          </p>
         </div>
         <div className="flex items-center gap-3">
           {LEGEND.map((l) => (
