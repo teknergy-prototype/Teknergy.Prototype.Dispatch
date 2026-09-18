@@ -6,6 +6,7 @@ import { JOB_STATUS_STYLES } from "@/lib/crew-planning/colors";
 import { useCrewPlanningStore } from "@/lib/crew-planning/store";
 import { DAY_END, DAY_START, formatDuration, formatMinutes, pctOfDay } from "@/lib/crew-planning/time";
 import type { CrewTeam, ItineraryItem, Job } from "@/lib/crew-planning/types";
+import { cn } from "@/lib/cn";
 import { BoxIcon, ClipboardIcon, CoffeeIcon, HomeIcon, InfoIcon } from "../../ui/Icons";
 
 const OP_ICONS: Partial<Record<ItineraryItem["type"], typeof HomeIcon>> = {
@@ -128,11 +129,9 @@ function CrewRow({
       </div>
 
       <div className="relative min-h-[64px] flex-1 rounded-md bg-black/[0.015] dark:bg-white/[0.03]">
-        {itinerary
-          .filter((item) => item.type !== "job")
-          .map((item) => (
-            <OpMarker key={item.id} item={item} />
-          ))}
+        {groupOpSegments(itinerary).map((segment) => (
+          <OpSegmentMarker key={segment[0].id} items={segment} />
+        ))}
 
         {crewJobs.map((job) => {
           const style = JOB_STATUS_STYLES[job.status];
@@ -192,50 +191,55 @@ function CrewRow({
   );
 }
 
-function OpMarker({ item }: { item: ItineraryItem }) {
-  const midpoint = (item.startMinutes + item.endMinutes) / 2;
-  const left = pctOfDay(midpoint);
-  const duration = item.endMinutes - item.startMinutes;
-  const title = `${item.label}${item.detail ? ` · ${item.detail}` : ""} (${formatDuration(duration)})`;
-
-  if (item.type === "travel") {
-    const showDetail = duration >= 30 || Boolean(item.warning);
-    if (showDetail) {
-      return (
-        <div
-          title={title}
-          className="absolute top-1/2 flex -translate-x-1/2 -translate-y-1/2 items-center gap-1 rounded-full border px-1.5 py-0.5 text-[9px] font-semibold"
-          style={{
-            left: `${left}%`,
-            borderColor: item.warning ? "#fca5a5" : "var(--border)",
-            backgroundColor: item.warning ? "#fef2f2" : "var(--surface)",
-            color: item.warning ? "#b91c1c" : "var(--muted)",
-          }}
-        >
-          <span>→</span>
-          {formatDuration(duration)}
-        </div>
-      );
+/**
+ * Consecutive non-job events (checkin, load-out, travel, break, lunch) often
+ * span only a few minutes each, which collapses to the same pixel position on
+ * an 11-hour axis. Rendering one marker per event caused icons to stack on
+ * top of each other; grouping every run of non-job events between two jobs
+ * into a single combined pill keeps the timeline legible.
+ */
+function groupOpSegments(itinerary: ItineraryItem[]): ItineraryItem[][] {
+  const segments: ItineraryItem[][] = [];
+  let current: ItineraryItem[] = [];
+  for (const item of itinerary) {
+    if (item.type === "job") {
+      if (current.length) segments.push(current);
+      current = [];
+    } else {
+      current.push(item);
     }
-    return (
-      <div
-        title={title}
-        className="absolute top-1/2 flex h-5 w-5 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-md border border-[var(--border)] bg-[var(--surface)] text-[10px] text-[var(--muted)]"
-        style={{ left: `${left}%` }}
-      >
-        →
-      </div>
-    );
   }
+  if (current.length) segments.push(current);
+  return segments;
+}
 
-  const Icon = OP_ICONS[item.type] ?? ClipboardIcon;
+function OpSegmentMarker({ items }: { items: ItineraryItem[] }) {
+  const start = items[0].startMinutes;
+  const end = items[items.length - 1].endMinutes;
+  const left = pctOfDay((start + end) / 2);
+  const totalDuration = end - start;
+  const hasWarning = items.some((item) => Boolean(item.warning));
+  const title = items
+    .map((item) => `${item.label}${item.detail ? ` · ${item.detail}` : ""} (${formatDuration(item.endMinutes - item.startMinutes)})${item.warning ? ` — ${item.warning}` : ""}`)
+    .join("\n");
+
   return (
     <div
       title={title}
-      className="absolute top-1/2 flex h-5 w-5 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-md border border-[var(--border)] bg-[var(--surface)] text-[var(--muted)]"
+      className={cn(
+        "absolute top-1/2 flex -translate-x-1/2 -translate-y-1/2 items-center gap-1 rounded-full border px-1.5 py-0.5 text-[9px] font-semibold whitespace-nowrap",
+        hasWarning
+          ? "border-red-300 bg-red-50 text-red-700 dark:border-red-900/50 dark:bg-red-950/30 dark:text-red-400"
+          : "border-[var(--border)] bg-[var(--surface)] text-[var(--muted)]"
+      )}
       style={{ left: `${left}%` }}
     >
-      <Icon size={11} />
+      {items.map((item) => {
+        if (item.type === "travel") return <span key={item.id}>→</span>;
+        const Icon = OP_ICONS[item.type] ?? ClipboardIcon;
+        return <Icon key={item.id} size={11} />;
+      })}
+      {totalDuration >= 20 && <span>{formatDuration(totalDuration)}</span>}
     </div>
   );
 }
