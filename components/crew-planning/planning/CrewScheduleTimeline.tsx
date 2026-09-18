@@ -4,7 +4,17 @@ import { buildDayItinerary, summarizeItinerary } from "@/lib/crew-planning/itine
 import { JOB_STATUS_STYLES } from "@/lib/crew-planning/colors";
 import { useCrewPlanningStore } from "@/lib/crew-planning/store";
 import { DAY_END, DAY_START, formatDuration, formatMinutes, pctOfDay } from "@/lib/crew-planning/time";
-import type { CrewTeam, Job } from "@/lib/crew-planning/types";
+import type { CrewTeam, ItineraryItem, Job } from "@/lib/crew-planning/types";
+import { BoxIcon, ClipboardIcon, CoffeeIcon, HomeIcon } from "../../ui/Icons";
+
+const OP_ICONS: Partial<Record<ItineraryItem["type"], typeof HomeIcon>> = {
+  checkin: ClipboardIcon,
+  "load-equipment": BoxIcon,
+  break: CoffeeIcon,
+  lunch: CoffeeIcon,
+  "return-office": HomeIcon,
+  "end-day": HomeIcon,
+};
 
 const HOURS = Array.from({ length: (DAY_END - DAY_START) / 60 + 1 }, (_, i) => DAY_START + i * 60);
 
@@ -112,6 +122,12 @@ function CrewRow({
       </div>
 
       <div className="relative min-h-[64px] flex-1 rounded-md bg-black/[0.015] dark:bg-white/[0.03]">
+        {itinerary
+          .filter((item) => item.type !== "job")
+          .map((item) => (
+            <OpMarker key={item.id} item={item} />
+          ))}
+
         {crewJobs.map((job) => {
           const style = JOB_STATUS_STYLES[job.status];
           const left = pctOfDay(job.scheduledStartMinutes!);
@@ -166,6 +182,54 @@ function CrewRow({
           );
         })}
       </div>
+    </div>
+  );
+}
+
+function OpMarker({ item }: { item: ItineraryItem }) {
+  const midpoint = (item.startMinutes + item.endMinutes) / 2;
+  const left = pctOfDay(midpoint);
+  const duration = item.endMinutes - item.startMinutes;
+  const title = `${item.label}${item.detail ? ` · ${item.detail}` : ""} (${formatDuration(duration)})`;
+
+  if (item.type === "travel") {
+    const showDetail = duration >= 30 || Boolean(item.warning);
+    if (showDetail) {
+      return (
+        <div
+          title={title}
+          className="absolute top-1/2 flex -translate-x-1/2 -translate-y-1/2 items-center gap-1 rounded-full border px-1.5 py-0.5 text-[9px] font-semibold"
+          style={{
+            left: `${left}%`,
+            borderColor: item.warning ? "#fca5a5" : "var(--border)",
+            backgroundColor: item.warning ? "#fef2f2" : "var(--surface)",
+            color: item.warning ? "#b91c1c" : "var(--muted)",
+          }}
+        >
+          <span>→</span>
+          {formatDuration(duration)}
+        </div>
+      );
+    }
+    return (
+      <div
+        title={title}
+        className="absolute top-1/2 flex h-5 w-5 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-md border border-[var(--border)] bg-[var(--surface)] text-[10px] text-[var(--muted)]"
+        style={{ left: `${left}%` }}
+      >
+        →
+      </div>
+    );
+  }
+
+  const Icon = OP_ICONS[item.type] ?? ClipboardIcon;
+  return (
+    <div
+      title={title}
+      className="absolute top-1/2 flex h-5 w-5 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-md border border-[var(--border)] bg-[var(--surface)] text-[var(--muted)]"
+      style={{ left: `${left}%` }}
+    >
+      <Icon size={11} />
     </div>
   );
 }
