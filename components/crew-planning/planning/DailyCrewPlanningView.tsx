@@ -15,7 +15,6 @@ export function DailyCrewPlanningView() {
   const syncJobber = useCrewPlanningStore((s) => s.syncJobber);
   const generateStatus = useCrewPlanningStore((s) => s.generateStatus);
   const generatePlan = useCrewPlanningStore((s) => s.generatePlan);
-  const selectedJobId = useCrewPlanningStore((s) => s.selectedJobId);
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
@@ -58,7 +57,7 @@ export function DailyCrewPlanningView() {
         <AIPlanPanel />
       </div>
 
-      {selectedJobId && <JobDetailDrawer />}
+      <JobDetailDrawer />
     </div>
   );
 }

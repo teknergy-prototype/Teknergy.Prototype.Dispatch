@@ -7,7 +7,8 @@ import { formatDuration, formatMinutes } from "@/lib/crew-planning/time";
 import { Avatar } from "../../ui/Avatar";
 import { Badge } from "../../ui/Badge";
 import { Button } from "../../ui/Button";
-import { LockIcon, PhoneIcon, XIcon } from "../../ui/Icons";
+import { Modal } from "../../ui/Modal";
+import { LockIcon, PhoneIcon } from "../../ui/Icons";
 import { AssignJobModal } from "./AssignJobModal";
 
 export function JobDetailDrawer() {
@@ -22,49 +23,40 @@ export function JobDetailDrawer() {
   const [assignOpen, setAssignOpen] = useState(false);
 
   const job = jobs.find((j) => j.id === selectedJobId);
-  if (!job) return null;
 
-  const style = JOB_STATUS_STYLES[job.status];
-  const crew = job.crewTeamId ? crews.find((c) => c.id === job.crewTeamId) : undefined;
+  const style = job ? JOB_STATUS_STYLES[job.status] : null;
+  const crew = job?.crewTeamId ? crews.find((c) => c.id === job.crewTeamId) : undefined;
   const crewMemberNames = crew?.memberIds.map((id) => teamMembers.find((m) => m.id === id)?.name).filter(Boolean) ?? [];
 
   return (
     <>
-      <div className="border-t-2 border-[var(--foreground)] bg-[var(--surface)] p-4">
-        <div className="mb-3 flex flex-wrap items-center gap-2">
-          <span className="text-[10px] font-semibold uppercase tracking-wide text-[var(--muted-2)]">Selected Job</span>
-          <span className="text-sm font-semibold text-[var(--foreground)]">{job.customerName}</span>
-          <Badge bg={style.bg} text={style.text}>
-            {style.label}
-            {job.conflictNote ? ` · ${job.conflictNote.toUpperCase()}` : ""}
-          </Badge>
-          {job.jobberAppointmentId && (
-            <span className="text-[10px] text-[var(--muted-2)]">Jobber appointment #{job.jobberAppointmentId}</span>
-          )}
-          <div className="ml-auto flex items-center gap-2">
-            {crew && (
-              <Button
-                variant="secondary"
-                className="text-[11px]"
-                onClick={() => {
-                  setSelectedCrewId(crew.id);
-                  setActiveTab("day-sheet");
-                }}
-              >
-                View crew day sheet
-              </Button>
-            )}
-            <button
-              onClick={() => setSelectedJobId(null)}
-              className="rounded-md p-1 text-[var(--muted)] hover:bg-[var(--surface-hover)]"
-              aria-label="Close"
-            >
-              <XIcon size={15} />
-            </button>
-          </div>
-        </div>
+      <Modal open={!!job} onClose={() => setSelectedJobId(null)} title={job?.customerName ?? "Job details"} width={860}>
+        {job && style && (
+          <>
+            <div className="mb-3 flex flex-wrap items-center gap-2">
+              <Badge bg={style.bg} text={style.text}>
+                {style.label}
+                {job.conflictNote ? ` · ${job.conflictNote.toUpperCase()}` : ""}
+              </Badge>
+              {job.jobberAppointmentId && (
+                <span className="text-[10px] text-[var(--muted-2)]">Jobber appointment #{job.jobberAppointmentId}</span>
+              )}
+              {crew && (
+                <Button
+                  variant="secondary"
+                  className="ml-auto text-[11px]"
+                  onClick={() => {
+                    setSelectedCrewId(crew.id);
+                    setActiveTab("day-sheet");
+                    setSelectedJobId(null);
+                  }}
+                >
+                  View crew day sheet
+                </Button>
+              )}
+            </div>
 
-        <div className="grid grid-cols-2 gap-4 text-xs sm:grid-cols-3 lg:grid-cols-5">
+            <div className="grid grid-cols-2 gap-4 text-xs sm:grid-cols-3 lg:grid-cols-5">
           <div>
             <div className="text-[10px] uppercase tracking-wide text-[var(--muted-2)]">Customer</div>
             <div className="font-medium text-[var(--foreground)]">{job.customerName}</div>
@@ -140,9 +132,11 @@ export function JobDetailDrawer() {
               </div>
             )}
           </div>
-        </div>
-      </div>
-      {assignOpen && <AssignJobModal jobId={job.id} onClose={() => setAssignOpen(false)} />}
+            </div>
+          </>
+        )}
+      </Modal>
+      {job && assignOpen && <AssignJobModal jobId={job.id} onClose={() => setAssignOpen(false)} />}
     </>
   );
 }

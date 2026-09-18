@@ -138,9 +138,8 @@ function CrewRow({
           const left = pctOfDay(job.scheduledStartMinutes!);
           const width = pctOfDay(job.scheduledEndMinutes!) - left;
           return (
-            <button
+            <div
               key={job.id}
-              onClick={() => onSelectJob(job.id)}
               className="absolute top-1 bottom-1 flex flex-col justify-center overflow-hidden rounded-md border px-2 text-left shadow-sm"
               style={{
                 left: `${left}%`,
@@ -149,7 +148,11 @@ function CrewRow({
                 borderColor: style.border,
               }}
             >
-              <span className="truncate text-[10px] font-semibold" style={{ color: style.text }}>
+              <span
+                onClick={() => onSelectJob(job.id)}
+                className="w-fit max-w-full cursor-pointer truncate text-[10px] font-semibold hover:underline"
+                style={{ color: style.text }}
+              >
                 {job.customerName}
               </span>
               <span className="truncate text-[9px]" style={{ color: style.text }}>
@@ -160,7 +163,7 @@ function CrewRow({
                   CONFLICT · {job.conflictNote}
                 </span>
               )}
-            </button>
+            </div>
           );
         })}
 
@@ -171,19 +174,22 @@ function CrewRow({
           const left = pctOfDay(rec.startMinutes!);
           const width = pctOfDay(rec.startMinutes! + job.durationMinutes) - left;
           return (
-            <button
+            <div
               key={rec.id}
-              onClick={() => onSelectJob(job.id)}
               className="absolute top-1 bottom-1 flex flex-col justify-center overflow-hidden rounded-md border border-dashed px-2 text-left"
               style={{ left: `${left}%`, width: `${Math.max(width, 6)}%`, backgroundColor: style.bg, borderColor: style.border }}
             >
               <span className="truncate text-[9px] font-semibold uppercase tracking-wide" style={{ color: style.text }}>
                 Proposed
               </span>
-              <span className="truncate text-[10px] font-semibold" style={{ color: style.text }}>
+              <span
+                onClick={() => onSelectJob(job.id)}
+                className="w-fit max-w-full cursor-pointer truncate text-[10px] font-semibold hover:underline"
+                style={{ color: style.text }}
+              >
                 {job.customerName}
               </span>
-            </button>
+            </div>
           );
         })}
       </div>

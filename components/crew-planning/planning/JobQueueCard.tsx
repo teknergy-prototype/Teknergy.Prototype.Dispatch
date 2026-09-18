@@ -15,12 +15,16 @@ export function JobQueueCard({ job, proposal }: { job: Job; proposal?: PlanRecom
 
   return (
     <div
-      onClick={() => setSelectedJobId(job.id)}
-      className="flex cursor-pointer flex-col gap-1.5 rounded-md border border-[var(--border-subtle)] bg-[var(--surface)] p-2.5 hover:border-[var(--border)] hover:shadow-sm"
+      className="flex flex-col gap-1.5 rounded-md border border-[var(--border-subtle)] bg-[var(--surface)] p-2.5 hover:border-[var(--border)] hover:shadow-sm"
       style={{ borderLeftWidth: 3, borderLeftColor: job.overdue ? "#dc2626" : "#a855f7" }}
     >
       <div className="flex items-start justify-between gap-2">
-        <span className="min-w-0 truncate text-xs font-semibold text-[var(--foreground)]">{job.customerName}</span>
+        <span
+          onClick={() => setSelectedJobId(job.id)}
+          className="min-w-0 cursor-pointer truncate text-xs font-semibold text-[var(--foreground)] hover:underline"
+        >
+          {job.customerName}
+        </span>
         <span className="flex shrink-0 items-center gap-1 text-[var(--muted-2)]">
           {job.clientWindowLabel && (
             <span className="text-[10px] font-medium text-[var(--muted)]">{job.clientWindowLabel}</span>
