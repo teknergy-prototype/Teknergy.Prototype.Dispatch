@@ -37,6 +37,7 @@ export function DayItinerary({
       <div className="mb-2 flex items-center justify-between">
         <h2 className="flex items-center gap-1 text-xs font-semibold text-[var(--foreground)]">
           Day itinerary
+          <span className="font-normal normal-case tracking-normal text-[var(--muted-2)]">· simulated break policy</span>
           <span title={BREAK_POLICY_LABEL} className="cursor-help font-normal text-[var(--muted-2)]">
             <InfoIcon size={11} />
           </span>

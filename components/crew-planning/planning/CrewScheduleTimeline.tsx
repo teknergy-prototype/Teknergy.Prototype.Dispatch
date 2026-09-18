@@ -45,7 +45,7 @@ export function CrewScheduleTimeline() {
         <div>
           <h2 className="text-xs font-semibold text-[var(--foreground)]">Crew Schedule</h2>
           <p className="flex items-center gap-1 text-[10px] text-[var(--muted)]">
-            Operational day · travel, load-out and breaks included
+            Operational day · travel, load-out and breaks included · simulated policy
             <span title={BREAK_POLICY_LABEL} className="cursor-help text-[var(--muted-2)]">
               <InfoIcon size={11} />
             </span>
